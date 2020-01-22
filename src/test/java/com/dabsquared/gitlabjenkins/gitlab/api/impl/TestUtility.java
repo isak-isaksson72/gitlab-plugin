@@ -32,11 +32,12 @@ class TestUtility {
     static final String API_TOKEN = "secret";
     private static final String API_TOKEN_ID = "apiTokenId";
     private static final boolean IGNORE_CERTIFICATE_ERRORS = true;
+    private static final boolean USE_BEARER_TOKEN = false;
     private static final int CONNECTION_TIMEOUT = 10;
     private static final int READ_TIMEOUT = 10;
 
     static void addGitLabApiToken() throws IOException {
-        for (CredentialsStore credentialsStore : CredentialsProvider.lookupStores(Jenkins.getInstance())) {
+        for (CredentialsStore credentialsStore : CredentialsProvider.lookupStores(Jenkins.get())) {
             if (credentialsStore instanceof SystemCredentialsProvider.StoreImpl) {
                 List<Domain> domains = credentialsStore.getDomains();
                 credentialsStore.addCredentials(domains.get(0),
@@ -62,7 +63,7 @@ class TestUtility {
     }
 
     static GitLabClient buildClientWithDefaults(GitLabClientBuilder clientBuilder, String url) {
-        return clientBuilder.buildClient(url, API_TOKEN, IGNORE_CERTIFICATE_ERRORS, CONNECTION_TIMEOUT, READ_TIMEOUT);
+        return clientBuilder.buildClient(url, API_TOKEN, IGNORE_CERTIFICATE_ERRORS, USE_BEARER_TOKEN, CONNECTION_TIMEOUT, READ_TIMEOUT);
     }
 
     static void assertApiImpl(GitLabClient client, Class<? extends GitLabApiProxy> apiImplClass) throws Exception {

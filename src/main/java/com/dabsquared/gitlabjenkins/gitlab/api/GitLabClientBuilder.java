@@ -27,7 +27,7 @@ public abstract class GitLabClientBuilder implements Comparable<GitLabClientBuil
     }
 
     public static List<GitLabClientBuilder> getAllGitLabClientBuilders() {
-        List<GitLabClientBuilder> builders = new ArrayList<>(Jenkins.getInstance().getExtensionList(GitLabClientBuilder.class));
+        List<GitLabClientBuilder> builders = new ArrayList<>(Jenkins.get().getExtensionList(GitLabClientBuilder.class));
         sort(builders);
         return builders;
     }
@@ -46,7 +46,7 @@ public abstract class GitLabClientBuilder implements Comparable<GitLabClientBuil
     }
 
     @Nonnull
-    public abstract GitLabClient buildClient(String url, String token, boolean ignoreCertificateErrors, int connectionTimeout, int readTimeout);
+    public abstract GitLabClient buildClient(String url, String token, boolean ignoreCertificateErrors, boolean useBearerToken, int connectionTimeout, int readTimeout);
 
     @Override
     public final int compareTo(@Nonnull GitLabClientBuilder other) {

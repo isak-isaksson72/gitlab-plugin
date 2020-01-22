@@ -7,6 +7,9 @@
     <f:entry title="${%GitLab connections}">
       <f:repeatable var="connection" items="${descriptor.connections}" name="connections">
         <table width="100%">
+          <f:entry title="${%Use Bearer Token}" field="useBearerToken">
+            <f:checkbox checked="${connection.useBearerToken}" default="false"/>
+          </f:entry>
           <f:entry title="${%Connection name}" field="name" description="${%A name for the connection}">
             <f:textbox value="${connection.name}"/>
             <input type="hidden" name="id" value="${connection}"/>
@@ -33,7 +36,7 @@
             <st:include page="configure-advanced.jelly" optional="true" />
           </f:advanced>
           <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection"
-                            with="apiTokenId,clientBuilderId,url,ignoreCertificateErrors"/>
+                            with="apiTokenId,clientBuilderId,url,ignoreCertificateErrors,useBearerToken"/>
           <f:entry title="">
             <div align="right">
               <f:repeatableDeleteButton/>

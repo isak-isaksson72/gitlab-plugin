@@ -140,11 +140,12 @@ public class GitLabConnectionConfig extends GlobalConfiguration {
                                            @QueryParameter String apiTokenId,
                                            @QueryParameter String clientBuilderId,
                                            @QueryParameter boolean ignoreCertificateErrors,
+                                           @QueryParameter boolean useBearerToken,
                                            @QueryParameter int connectionTimeout,
                                            @QueryParameter int readTimeout) {
-	Jenkins.getActiveInstance().checkPermission(Jenkins.ADMINISTER);
+	Jenkins.get().checkPermission(Jenkins.ADMINISTER);
         try {
-            new GitLabConnection("", url, apiTokenId, clientBuilderId, ignoreCertificateErrors, connectionTimeout, readTimeout).getClient(null, null).getCurrentUser();
+            new GitLabConnection("", url, apiTokenId, clientBuilderId, ignoreCertificateErrors, useBearerToken, connectionTimeout, readTimeout).getClient(null, null).getCurrentUser();
             return FormValidation.ok(Messages.connection_success());
         } catch (WebApplicationException e) {
             return FormValidation.error(Messages.connection_error(e.getMessage()));
@@ -154,11 +155,11 @@ public class GitLabConnectionConfig extends GlobalConfiguration {
     }
 
     public ListBoxModel doFillApiTokenIdItems(@QueryParameter String name, @QueryParameter String url) {
-        if (Jenkins.getInstance().hasPermission(Item.CONFIGURE)) {
+        if (Jenkins.get().hasPermission(Item.CONFIGURE)) {
             AbstractIdCredentialsListBoxModel<StandardListBoxModel, StandardCredentials> options = new StandardListBoxModel()
                 .includeEmptyValue()
                 .includeMatchingAs(ACL.SYSTEM,
-                                   Jenkins.getActiveInstance(),
+                                   Jenkins.get(),
                                    StandardCredentials.class,
                                    URIRequirementBuilder.fromUri(url).build(),
                                    new GitLabCredentialMatcher());

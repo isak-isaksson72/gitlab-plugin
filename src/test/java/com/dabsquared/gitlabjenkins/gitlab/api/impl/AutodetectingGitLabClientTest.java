@@ -37,7 +37,7 @@ public class AutodetectingGitLabClientTest {
         addGitLabApiToken();
 
         List<GitLabClientBuilder> builders = Arrays.<GitLabClientBuilder>asList(new V3GitLabClientBuilder(), new V4GitLabClientBuilder());
-        api = new AutodetectingGitLabClient(builders, gitLabUrl, API_TOKEN, true, 10, 10);
+        api = new AutodetectingGitLabClient(builders, gitLabUrl, API_TOKEN, true, false, 10, 10);
 
         v3Request = versionRequest(V3GitLabApiProxy.ID);
         v4Request = versionRequest(V4GitLabApiProxy.ID);

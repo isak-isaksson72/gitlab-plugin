@@ -60,6 +60,7 @@ import static java.net.Proxy.Type.HTTP;
 public class ResteasyGitLabClientBuilder extends GitLabClientBuilder {
     private static final Logger LOGGER = Logger.getLogger(ResteasyGitLabClientBuilder.class.getName());
     private static final String PRIVATE_TOKEN = "PRIVATE-TOKEN";
+    private static final String BEARER_TOKEN = "Authorization";
 
     @Initializer(before = InitMilestone.PLUGINS_STARTED)
     public static void setRuntimeDelegate() {
@@ -77,18 +78,19 @@ public class ResteasyGitLabClientBuilder extends GitLabClientBuilder {
 
     @Nonnull
     @Override
-    public final GitLabClient buildClient(String url, String apiToken, boolean ignoreCertificateErrors, int connectionTimeout, int readTimeout) {
+    public final GitLabClient buildClient(String url, String apiToken, boolean ignoreCertificateErrors, boolean useBearerToken, int connectionTimeout, int readTimeout) {
         return buildClient(
             url,
             apiToken,
-            Jenkins.getActiveInstance().proxy,
+            Jenkins.get().proxy,
             ignoreCertificateErrors,
+            useBearerToken,
             connectionTimeout,
             readTimeout
         );
     }
 
-    private GitLabClient buildClient(String url, String apiToken, ProxyConfiguration httpProxyConfig, boolean ignoreCertificateErrors, int connectionTimeout, int readTimeout) {
+    private GitLabClient buildClient(String url, String apiToken, ProxyConfiguration httpProxyConfig, boolean ignoreCertificateErrors, boolean useBearerToken, int connectionTimeout, int readTimeout) {
         ResteasyClientBuilder builder = new ResteasyClientBuilder();
 
         if (ignoreCertificateErrors) {
@@ -115,7 +117,7 @@ public class ResteasyGitLabClientBuilder extends GitLabClientBuilder {
             .socketTimeout(readTimeout, TimeUnit.SECONDS)
             .register(new JacksonJsonProvider())
             .register(new JacksonConfig())
-            .register(new ApiHeaderTokenFilter(apiToken))
+            .register(new ApiHeaderTokenFilter(apiToken, useBearerToken))
             .register(new LoggingFilter())
             .register(new RemoveAcceptEncodingFilter())
             .register(new JaxrsFormProvider())
@@ -138,13 +140,24 @@ public class ResteasyGitLabClientBuilder extends GitLabClientBuilder {
     @Priority(Priorities.HEADER_DECORATOR)
     private static class ApiHeaderTokenFilter implements ClientRequestFilter {
         private final String gitlabApiToken;
-
-        ApiHeaderTokenFilter(String gitlabApiToken) {
+        private final boolean useBearerToken;
+        ApiHeaderTokenFilter(String gitlabApiToken, boolean useBearerToken) {
             this.gitlabApiToken = gitlabApiToken;
+            this.useBearerToken = useBearerToken;
         }
 
         public void filter(ClientRequestContext requestContext) {
-            requestContext.getHeaders().putSingle(PRIVATE_TOKEN, gitlabApiToken);
+            if (useBearerToken) {
+                if (LOGGER.isLoggable(Level.FINEST)) {
+                    LOGGER.log(Level.FINEST, "Adding Header -> " + BEARER_TOKEN + ':' + ' ' + "Bearer" + ' ' + "[****FILTERED****]");
+                }
+                requestContext.getHeaders().putSingle(BEARER_TOKEN, "Bearer" + ' ' + gitlabApiToken);
+            } else {
+                if (LOGGER.isLoggable(Level.FINEST)) {
+                    LOGGER.log(Level.FINEST, "Adding Header -> " + PRIVATE_TOKEN + ':' + ' ' + "[****FILTERED****]");
+                }
+                requestContext.getHeaders().putSingle(PRIVATE_TOKEN, gitlabApiToken);
+            }
         }
     }
 
@@ -203,7 +216,7 @@ public class ResteasyGitLabClientBuilder extends GitLabClientBuilder {
             public String apply(@Nullable Map.Entry<String, List<Object>> input) {
                 if (input == null) {
                     return null;
-                } else if (input.getKey().equals(PRIVATE_TOKEN)) {
+                } else if (input.getKey().equals(PRIVATE_TOKEN) || input.getKey().equals(BEARER_TOKEN)) {
                     return input.getKey() + " = [****FILTERED****]";
                 } else {
                     return input.getKey() + " = [" + Joiner.on(", ").join(input.getValue()) + "]";

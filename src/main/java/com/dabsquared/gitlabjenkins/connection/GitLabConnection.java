@@ -45,42 +45,46 @@ public class GitLabConnection {
     private String apiTokenId;
     private GitLabClientBuilder clientBuilder;
     private final boolean ignoreCertificateErrors;
+    private final boolean useBearerToken;
     private final Integer connectionTimeout;
     private final Integer readTimeout;
     private transient GitLabClient apiCache;
 
-    public GitLabConnection(String name, String url, String apiTokenId, boolean ignoreCertificateErrors, Integer connectionTimeout, Integer readTimeout) {
+    public GitLabConnection(String name, String url, String apiTokenId, boolean ignoreCertificateErrors, boolean useBearerToken, Integer connectionTimeout, Integer readTimeout) {
         this(
             name,
             url,
             apiTokenId,
             new AutodetectGitLabClientBuilder(),
             ignoreCertificateErrors,
+            useBearerToken,
             connectionTimeout,
             readTimeout
         );
     }
 
     @DataBoundConstructor
-    public GitLabConnection(String name, String url, String apiTokenId, String clientBuilderId, boolean ignoreCertificateErrors, Integer connectionTimeout, Integer readTimeout) {
+    public GitLabConnection(String name, String url, String apiTokenId, String clientBuilderId, boolean ignoreCertificateErrors, boolean useBearerToken, Integer connectionTimeout, Integer readTimeout) {
         this(
             name,
             url,
             apiTokenId,
             getGitLabClientBuilderById(clientBuilderId),
             ignoreCertificateErrors,
+            useBearerToken,
             connectionTimeout,
             readTimeout
         );
     }
 
     @Restricted(NoExternalUse.class)
-    public GitLabConnection(String name, String url, String apiTokenId, GitLabClientBuilder clientBuilder, boolean ignoreCertificateErrors, Integer connectionTimeout, Integer readTimeout) {
+    public GitLabConnection(String name, String url, String apiTokenId, GitLabClientBuilder clientBuilder, boolean ignoreCertificateErrors, boolean useBearerToken, Integer connectionTimeout, Integer readTimeout) {
         this.name = name;
         this.url = url;
         this.apiTokenId = apiTokenId;
         this.clientBuilder = clientBuilder;
         this.ignoreCertificateErrors = ignoreCertificateErrors;
+        this.useBearerToken = useBearerToken;
         this.connectionTimeout = connectionTimeout;
         this.readTimeout = readTimeout;
     }
@@ -101,6 +105,10 @@ public class GitLabConnection {
         return clientBuilder.id();
     }
 
+    public boolean isUseBearerToken() {
+        return useBearerToken;
+    }
+
     public boolean isIgnoreCertificateErrors() {
         return ignoreCertificateErrors;
     }
@@ -116,14 +124,14 @@ public class GitLabConnection {
     public GitLabClient getClient(Item item, String jobCredentialId) {
         if (apiCache == null) {
             apiCache = clientBuilder.buildClient(url, null == jobCredentialId ? getApiToken(apiTokenId, null) : getApiToken(jobCredentialId, item), ignoreCertificateErrors,
-                    connectionTimeout, readTimeout);
+                useBearerToken, connectionTimeout, readTimeout);
         }
         return apiCache;
     }
 
     @Restricted(NoExternalUse.class)
     private String getApiToken(String apiTokenId, Item item) {
-        ItemGroup context = null != item ? item.getParent() : Jenkins.getInstance();
+        ItemGroup context = null != item ? item.getParent() : Jenkins.get();
         StandardCredentials credentials = CredentialsMatchers.firstOrNull(
             lookupCredentials(
                     StandardCredentials.class,
@@ -144,10 +152,10 @@ public class GitLabConnection {
 
     protected GitLabConnection readResolve() {
         if (connectionTimeout == null || readTimeout == null) {
-            return new GitLabConnection(name, url, apiTokenId, new AutodetectGitLabClientBuilder(), ignoreCertificateErrors, 10, 10);
+            return new GitLabConnection(name, url, apiTokenId, new AutodetectGitLabClientBuilder(), ignoreCertificateErrors, useBearerToken, 10, 10);
         }
         if (clientBuilder == null) {
-            return new GitLabConnection(name, url, apiTokenId, new AutodetectGitLabClientBuilder(), ignoreCertificateErrors, connectionTimeout, readTimeout);
+            return new GitLabConnection(name, url, apiTokenId, new AutodetectGitLabClientBuilder(), ignoreCertificateErrors, useBearerToken, connectionTimeout, readTimeout);
         }
 
         return this;
@@ -155,10 +163,10 @@ public class GitLabConnection {
 
     @Initializer(after = InitMilestone.PLUGINS_STARTED)
     public static void migrate() throws IOException {
-        GitLabConnectionConfig descriptor = (GitLabConnectionConfig) Jenkins.getInstance().getDescriptor(GitLabConnectionConfig.class);
+        GitLabConnectionConfig descriptor = (GitLabConnectionConfig) Jenkins.get().getDescriptor(GitLabConnectionConfig.class);
         for (GitLabConnection connection : descriptor.getConnections()) {
             if (connection.apiTokenId == null && connection.apiToken != null) {
-                for (CredentialsStore credentialsStore : CredentialsProvider.lookupStores(Jenkins.getInstance())) {
+                for (CredentialsStore credentialsStore : CredentialsProvider.lookupStores(Jenkins.get())) {
                     if (credentialsStore instanceof SystemCredentialsProvider.StoreImpl) {
                         List<Domain> domains = credentialsStore.getDomains();
                         connection.apiTokenId = UUID.randomUUID().toString();

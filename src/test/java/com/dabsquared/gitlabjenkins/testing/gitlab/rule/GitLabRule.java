@@ -87,8 +87,8 @@ public class GitLabRule implements TestRule {
             }
         }
 
-        GitLabConnectionConfig config = Jenkins.getInstance().getDescriptorByType(GitLabConnectionConfig.class);
-        GitLabConnection connection = new GitLabConnection("test", url, API_TOKEN_ID, new V3GitLabClientBuilder(), true,10, 10);
+        GitLabConnectionConfig config = Jenkins.get().getDescriptorByType(GitLabConnectionConfig.class);
+        GitLabConnection connection = new GitLabConnection("test", url, API_TOKEN_ID, new V3GitLabClientBuilder(), true, false, 10, 10);
         config.addConnection(connection);
         config.save();
         return new GitLabConnectionProperty(connection.getName());
@@ -137,7 +137,7 @@ public class GitLabRule implements TestRule {
 
     private GitLabClient client() {
         if (clientCache == null) {
-            clientCache = new V3GitLabClientBuilder().buildClient(url, getApiToken(), false, -1, -1);
+            clientCache = new V3GitLabClientBuilder().buildClient(url, getApiToken(), false, false, -1, -1);
             User user = clientCache.getCurrentUser();
             client().updateUser(user.getId().toString(), user.getEmail(), user.getUsername(), user.getName(), PASSWORD);
         }

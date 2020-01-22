@@ -168,18 +168,19 @@ public class GitLabPushTrigger extends Trigger<Job<?, ?>> implements MergeReques
     public static void migrateJobs() throws IOException {
         GitLabPushTrigger.DescriptorImpl oldConfig = Trigger.all().get(GitLabPushTrigger.DescriptorImpl.class);
         if (!oldConfig.jobsMigrated) {
-            GitLabConnectionConfig gitLabConfig = (GitLabConnectionConfig) Jenkins.getInstance().getDescriptor(GitLabConnectionConfig.class);
+            GitLabConnectionConfig gitLabConfig = (GitLabConnectionConfig) Jenkins.get().getDescriptor(GitLabConnectionConfig.class);
             gitLabConfig.getConnections().add(new GitLabConnection(
                 oldConfig.gitlabHostUrl,
                     oldConfig.gitlabHostUrl,
                     oldConfig.gitlabApiToken,
                 "autodetect",
                     oldConfig.ignoreCertificateErrors,
+                    oldConfig.useBearerToken,
                     10,
                     10));
 
             String defaultConnectionName = gitLabConfig.getConnections().get(0).getName();
-            for (AbstractProject<?, ?> project : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
+            for (AbstractProject<?, ?> project : Jenkins.get().getAllItems(AbstractProject.class)) {
                 GitLabPushTrigger trigger = project.getTrigger(GitLabPushTrigger.class);
                 if (trigger != null) {
                     if (trigger.addCiMessage) {
@@ -194,7 +195,7 @@ public class GitLabPushTrigger extends Trigger<Job<?, ?>> implements MergeReques
             oldConfig.save();
         }
         if (!oldConfig.jobsMigrated2) {
-            for (AbstractProject<?, ?> project : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
+            for (AbstractProject<?, ?> project : Jenkins.get().getAllItems(AbstractProject.class)) {
                 GitLabPushTrigger trigger = project.getTrigger(GitLabPushTrigger.class);
                 if (trigger != null) {
                     if (trigger.addNoteOnMergeRequest) {
@@ -560,6 +561,7 @@ public class GitLabPushTrigger extends Trigger<Job<?, ?>> implements MergeReques
         private String gitlabApiToken;
         private String gitlabHostUrl = "";
         private boolean ignoreCertificateErrors = false;
+        private boolean useBearerToken = false;
 
         public DescriptorImpl() {
             load();

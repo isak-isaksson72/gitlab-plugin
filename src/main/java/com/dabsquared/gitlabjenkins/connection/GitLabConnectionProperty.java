@@ -70,7 +70,7 @@ public class GitLabConnectionProperty extends JobProperty<Job<?, ?>> {
 
     public GitLabClient getClient() {
         if (StringUtils.isNotEmpty(gitLabConnection)) {
-            GitLabConnectionConfig connectionConfig = (GitLabConnectionConfig) Jenkins.getActiveInstance().getDescriptor(GitLabConnectionConfig.class);
+            GitLabConnectionConfig connectionConfig = (GitLabConnectionConfig) Jenkins.get().getDescriptor(GitLabConnectionConfig.class);
             return connectionConfig != null ? connectionConfig.getClient(gitLabConnection, this.owner, jobCredentialId)
                    : null;
         }
@@ -110,7 +110,7 @@ public class GitLabConnectionProperty extends JobProperty<Job<?, ?>> {
 
         public ListBoxModel doFillGitLabConnectionItems() {
             ListBoxModel options = new ListBoxModel();
-            GitLabConnectionConfig descriptor = (GitLabConnectionConfig) Jenkins.getInstance().getDescriptor(GitLabConnectionConfig.class);
+            GitLabConnectionConfig descriptor = (GitLabConnectionConfig) Jenkins.get().getDescriptor(GitLabConnectionConfig.class);
             for (GitLabConnection connection : descriptor.getConnections()) {
                 options.add(connection.getName(), connection.getName());
             }
@@ -133,7 +133,7 @@ public class GitLabConnectionProperty extends JobProperty<Job<?, ?>> {
         	Jenkins.getActiveInstance().checkPermission(Jenkins.ADMINISTER);
              try {
                 GitLabConnection gitLabConnectionTested = null;
-                GitLabConnectionConfig descriptor = (GitLabConnectionConfig) Jenkins.getInstance()
+                GitLabConnectionConfig descriptor = (GitLabConnectionConfig) Jenkins.get()
                         .getDescriptor(GitLabConnectionConfig.class);
                 for (GitLabConnection connection : descriptor.getConnections()) {
                     if (gitLabConnection.equals(connection.getName())) {
@@ -144,8 +144,9 @@ public class GitLabConnectionProperty extends JobProperty<Job<?, ?>> {
                     return FormValidation.error(Messages.connection_error("The GitLab Connection does not exist"));
                 }
                 new GitLabConnection("", gitLabConnectionTested.getUrl(), jobCredentialId,
-                        gitLabConnectionTested.getClientBuilderId(), true,
-                        gitLabConnectionTested.getConnectionTimeout(), gitLabConnectionTested.getReadTimeout())
+                        gitLabConnectionTested.getClientBuilderId(),gitLabConnectionTested.isIgnoreCertificateErrors(),
+                        gitLabConnectionTested.isUseBearerToken(), gitLabConnectionTested.getConnectionTimeout(),
+                        gitLabConnectionTested.getReadTimeout())
                                 .getClient(item, jobCredentialId).getCurrentUser();
                 return FormValidation.ok(Messages.connection_success());
             } catch (WebApplicationException e) {

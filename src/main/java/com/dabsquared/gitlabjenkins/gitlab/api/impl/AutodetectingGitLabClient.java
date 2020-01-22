@@ -16,16 +16,18 @@ final class AutodetectingGitLabClient implements GitLabClient {
     private final String url;
     private final String token;
     private final boolean ignoreCertificateErrors;
+    private final boolean useBearerToken;
     private final int connectionTimeout;
     private final int readTimeout;
     private GitLabClient delegate;
 
 
-    AutodetectingGitLabClient(Iterable<GitLabClientBuilder> builders, String url, String token, boolean ignoreCertificateErrors, int connectionTimeout, int readTimeout) {
+    AutodetectingGitLabClient(Iterable<GitLabClientBuilder> builders, String url, String token, boolean ignoreCertificateErrors, boolean useBearerToken, int connectionTimeout, int readTimeout) {
         this.builders = builders;
         this.url = url;
         this.token = token;
         this.ignoreCertificateErrors = ignoreCertificateErrors;
+        this.useBearerToken = useBearerToken;
         this.connectionTimeout = connectionTimeout;
         this.readTimeout = readTimeout;
     }
@@ -177,7 +179,6 @@ final class AutodetectingGitLabClient implements GitLabClient {
         );
     }
 
-
     @Override
     public void awardMergeRequestEmoji(final MergeRequest mr, final String body) {
         execute(
@@ -292,7 +293,6 @@ final class AutodetectingGitLabClient implements GitLabClient {
             });
     }
 
-
     private GitLabClient delegate(boolean reset) {
         if (reset || delegate == null) {
             delegate = autodetectOrDie();
@@ -312,7 +312,7 @@ final class AutodetectingGitLabClient implements GitLabClient {
 
     private GitLabClient autodetect() {
         for (GitLabClientBuilder candidate : builders) {
-            GitLabClient client = candidate.buildClient(url, token, ignoreCertificateErrors, connectionTimeout, readTimeout);
+            GitLabClient client = candidate.buildClient(url, token, ignoreCertificateErrors, useBearerToken, connectionTimeout, readTimeout);
             try {
                 client.getCurrentUser();
                 return client;
@@ -327,7 +327,6 @@ final class AutodetectingGitLabClient implements GitLabClient {
     private <R> R execute(GitLabOperation<R> operation) {
         return operation.execute(false);
     }
-
 
     private abstract class GitLabOperation<R> {
         private R execute(boolean reset) {

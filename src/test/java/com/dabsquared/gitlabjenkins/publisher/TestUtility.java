@@ -53,15 +53,15 @@ final class TestUtility {
     static void setupGitLabConnections(JenkinsRule jenkins, MockServerRule mockServer) throws IOException {
         GitLabConnectionConfig connectionConfig = jenkins.get(GitLabConnectionConfig.class);
         String apiTokenId = "apiTokenId";
-        for (CredentialsStore credentialsStore : CredentialsProvider.lookupStores(Jenkins.getInstance())) {
+        for (CredentialsStore credentialsStore : CredentialsProvider.lookupStores(Jenkins.get())) {
             if (credentialsStore instanceof SystemCredentialsProvider.StoreImpl) {
                 List<Domain> domains = credentialsStore.getDomains();
                 credentialsStore.addCredentials(domains.get(0),
                     new StringCredentialsImpl(CredentialsScope.SYSTEM, apiTokenId, "GitLab API Token", Secret.fromString(TestUtility.API_TOKEN)));
             }
         }
-        connectionConfig.addConnection(new GitLabConnection(TestUtility.GITLAB_CONNECTION_V3, "http://localhost:" + mockServer.getPort() + "/gitlab", apiTokenId, new V3GitLabClientBuilder(), false, 10, 10));
-        connectionConfig.addConnection(new GitLabConnection(TestUtility.GITLAB_CONNECTION_V4, "http://localhost:" + mockServer.getPort() + "/gitlab", apiTokenId, new V4GitLabClientBuilder(), false, 10, 10));
+        connectionConfig.addConnection(new GitLabConnection(TestUtility.GITLAB_CONNECTION_V3, "http://localhost:" + mockServer.getPort() + "/gitlab", apiTokenId, new V3GitLabClientBuilder(), false, false, 10, 10));
+        connectionConfig.addConnection(new GitLabConnection(TestUtility.GITLAB_CONNECTION_V4, "http://localhost:" + mockServer.getPort() + "/gitlab", apiTokenId, new V4GitLabClientBuilder(), false, false, 10, 10));
 
     }
 
@@ -99,7 +99,7 @@ final class TestUtility {
 
     @SuppressWarnings("ConstantConditions")
     static String formatNote(AbstractBuild build, String note) {
-        String buildUrl = Jenkins.getInstance().getRootUrl() + build.getUrl();
+        String buildUrl = Jenkins.get().getRootUrl() + build.getUrl();
         return MessageFormat.format(note, build.getResult(), build.getParent().getDisplayName(), BUILD_NUMBER, buildUrl);
     }
 
